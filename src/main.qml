@@ -6,7 +6,7 @@ import "./MyButton"
 Window {
     visible: true
     width: 280
-    height: 400
+    height: 200
     title: qsTr("计算器")
 
     flags: Qt.Dialog | Qt.MSWindowsFixedSizeDialogHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint | Qt.CustomizeWindowHint | Qt.WindowSystemMenuHint
@@ -17,6 +17,7 @@ Window {
         property string resultValue
         property string inputValue
         property string tempResultValue
+        property bool isClickEqual : false
         property string error1 : "Syntax ERROR"
         property string error2 : "Match ERROR"
 
@@ -110,7 +111,7 @@ Window {
 
             MyButton{id:number0;value:"0"}
             MyButton{id:btnPOINT;value:"."}
-            MyButton{id:btnEXP;value:"E"}
+            MyButton{id:btnEXP;value:"E";enabled: false;color: "grey"}
             MyButton{id:btnANS;value:"Ans"}
             MyButton{id:btnEQUAL;value: "="}
         }
@@ -134,6 +135,7 @@ Window {
         function setDisplayError(value)
         {
             setDisplayClear(value)
+            displayError.text = value
             displayError.visible = true
         }
 
@@ -149,6 +151,7 @@ Window {
 
         function setDisplayResult(value)
         {
+            isClickEqual = true
             var result = clc.getValue(displayInput.text, tempResultValue)
 
             if(result === error1 || result === error2)
@@ -162,13 +165,40 @@ Window {
 
         function setDisplayInput(value)
         {
-            if(!isDel(value))
-                displayInput.text = displayInput.text + value
-            else
+            if(isClickEqual)
+            {
+                //在按下等于号之后，再输入数字或符号则需要先清除显示
+                displayInput.text = ""
+                isClickEqual = false
+                //如果有错误信息显示，需要清除
+                displayError.text = ""
+                displayError.visible = false
+                //如果在按下等于号后，再直接输入了符号，则自动将结果作为Ans放入输入中作为符号的第一个数字
+                if(isSymbol(value))
+                {
+                    displayInput.text = "Ans"
+                }
+            }
+
+            if(isDel(value))
             {
                 var tempStr = displayInput.text
-                tempStr = tempStr.substring(0, tempStr.length - 1)
+                var lastIndex = tempStr.lastIndexOf("Ans")
+                if((lastIndex !== -1) && (lastIndex + 3 === tempStr.length))
+                {
+                    //输入框中存在Ans，且刚好在最后一个位置，则删除时需要删除三个字符
+                    tempStr = tempStr.substring(0, tempStr.length - 3)
+                }
+                else
+                {
+                    tempStr = tempStr.substring(0, tempStr.length - 1)
+                }
+
                 displayInput.text = tempStr
+            }
+            else
+            {
+                displayInput.text = displayInput.text + value
             }
         }
 
